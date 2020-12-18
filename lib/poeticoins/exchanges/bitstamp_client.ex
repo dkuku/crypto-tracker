@@ -1,17 +1,13 @@
 defmodule Poeticoins.Exchanges.BitstampClient do
   alias Poeticoins.{Trade, Product}
   alias Poeticoins.Exchanges.Client
-  import Client, only: [validate_required: 2]
+  require Client
 
-  @behaviour Client
-
-  @impl true
-  def exchange_name(), do: "bitstamp"
-
-  @impl true
-  def server_host(), do: 'ws.bitstamp.net'
-  @impl true
-  def server_port(), do: 443
+  Client.defclient(
+    exchange_name: "bitstamp",
+    host: 'ws.bitstamp.net',
+    currency_pairs: [btc: :usd, eth: :usd, ltc: :usd]
+  )
 
   @impl true
   def handle_ws_message(%{"event" => "trade"} = msg, state) do
@@ -27,7 +23,9 @@ defmodule Poeticoins.Exchanges.BitstampClient do
 
   @impl true
   def subscription_frames(currency_pairs) do
-    Enum.map(currency_pairs, &subscription_frame/1)
+    currency_pairs
+    |> Enum.map(&currency_encoder/1)
+    |> Enum.map(&subscription_frame/1)
   end
 
   defp subscription_frame(currency_pair) do
@@ -50,7 +48,7 @@ defmodule Poeticoins.Exchanges.BitstampClient do
          {:ok, traded_at} = timestamp_to_datetime(data["timestamp"]) do
 
       Trade.new(
-        product: Product.new(exchange_name(), currency_pair),
+        product: Product.new(exchange_name(), currency_decoder(currency_pair)),
         price: data["price_str"],
         volume: data["amount_str"],
         traded_at: traded_at
@@ -69,5 +67,11 @@ defmodule Poeticoins.Exchanges.BitstampClient do
       :error ->
         {:error, :invalid_timestamp_string}
     end
+  end
+
+  def currency_encoder({k, v}), do: "#{k}#{v}"
+
+  def currency_decoder(<<k::bytes-size(3)>> <> v = currency_pair) do
+    {String.to_existing_atom(k), String.to_existing_atom(v)}
   end
 end
