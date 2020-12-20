@@ -9,6 +9,8 @@ defmodule Poeticoins.Exchanges do
                          Product.new(client.exchange_name(), pair)
                        end)
 
+  def clients, do: @clients
+
   @spec available_products() :: [Product.t()]
   def available_products(), do: @available_products
 
