@@ -1,22 +1,15 @@
 defmodule PoeticoinsWeb.CryptoDashboardLive do
   use PoeticoinsWeb, :live_view
   alias Poeticoins.Product
+  import PoeticoinsWeb.ProductHelpers
 
   def mount(_params, _session, socket) do
-    products = []
-    trades = %{}
-
-    if socket.connected? do
-      Enum.each(products, &Poeticoins.subscribe_to_trades(&1))
-    end
-
-    socket = assign(socket, trades: trades, products: products)
-
+    socket = assign(socket, products: [])
     {:ok, socket}
   end
 
   def handle_info({:new_trade, trade}, socket) do
-    socket = update(socket, :trades, &Map.put(&1, trade.product, trade))
+    send_update(PoeticoinsWeb.ProductComponent, id: trade.product, trade: trade)
     {:noreply, socket}
   end
 
@@ -29,14 +22,24 @@ defmodule PoeticoinsWeb.CryptoDashboardLive do
       end)
     {:noreply, assign(socket, :products, products)}
   end
+
   def handle_event("add-product", %{"product_id" => product_id} = event, socket) do
-    [exchange, pair] = String.split(product_id, ":")
-    product = Product.new(exchange, pair)
+    product = product_from_string(product_id)
     socket = maybe_add_product(socket, product)
     {:noreply, socket}
   end
   def handle_event("add-product", %{} = event, socket) do
     {:noreply, socket}
+  end
+
+  def handle_event("remove-product", %{"product-id" => product_id} = _params, socket) do
+    product = product_from_string(product_id)
+    socket = update(socket, :products, & List.delete(&1, product))
+    {:noreply, socket}
+  end
+  defp product_from_string(product_id) do
+    [exchange, pair] = String.split(product_id, ":")
+    Product.new(exchange, pair)
   end
 
   defp add_product(socket, product) do
@@ -45,20 +48,19 @@ defmodule PoeticoinsWeb.CryptoDashboardLive do
     socket =
       socket
       |> update(:products, &(&1 ++ [product]))
-      |> update(:trades, fn trades ->
-        trade = Poeticoins.get_last_trade(product)
-        Map.put(trades, product, trade)
-      end)
   end
 
   defp maybe_add_product(socket, product) do
     if product not in socket.assigns.products do
       socket
       |> add_product(product)
-      |> put_flash(:info, "#{product.exchange_name} - #{product.currency_pair} added successfully" )
     else
       socket
-      |> put_flash(:error, "#{product.exchange_name} - #{product.currency_pair} was already added" )
     end
+  end
+
+  defp group_products_by_exchange_name do
+    Poeticoins.available_products()
+    |> Enum.group_by(& &1.exchange_name)
   end
 end
