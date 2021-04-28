@@ -44,6 +44,7 @@ defmodule Poeticoins.MixProject do
       {:gettext, "~> 0.11"},
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
+      {:tzdata, "~> 1.1"},
       {:cowlib, "~> 2.9", override: true},
       {:gun, github: "ninenines/gun"},
     ]

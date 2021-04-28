@@ -12,6 +12,7 @@ defmodule PoeticoinsWeb.ProductComponent do
     socket =
       socket
       |> assign(:product, product)
+      |> assign(:timezone, assigns.timezone)
       |> assign(:trade, Poeticoins.get_last_trade(product))
     {:ok, socket}
   end
@@ -19,7 +20,12 @@ defmodule PoeticoinsWeb.ProductComponent do
   def render(%{trade: trade} = assigns) when not is_nil(trade) do
     ~L"""
     <div class="product-component">
-      <button class="remove" phx-click="remove-product" phx-value-product-id="<%= to_string(@product) %>">X</button>
+    <button class="remove"
+            phx-click="remove-product"
+            phx-value-product-id="<%= to_string(@product) %>"
+    >
+    X
+    </button>
       <div class="currency-container">
         <img src="<%= crypto_icon(@socket, @product) %>" class="icon" />
         <div class="crypto-name">
@@ -43,7 +49,7 @@ defmodule PoeticoinsWeb.ProductComponent do
         <%= @trade.product.exchange_name %>
       </div>
       <div class="trade-time">
-        <%= human_datetime(@trade.traded_at) %>
+        <%= human_datetime(@trade.traded_at, @timezone) %>
       </div>
     </div>
     """

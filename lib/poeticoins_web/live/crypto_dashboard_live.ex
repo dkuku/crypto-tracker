@@ -4,7 +4,10 @@ defmodule PoeticoinsWeb.CryptoDashboardLive do
   import PoeticoinsWeb.ProductHelpers
 
   def mount(_params, _session, socket) do
-    socket = assign(socket, products: [])
+    socket = assign(socket,
+      products: [],
+      timezone: get_timezone_from_connection(socket)
+    )
     {:ok, socket}
   end
 
@@ -62,5 +65,12 @@ defmodule PoeticoinsWeb.CryptoDashboardLive do
   defp group_products_by_exchange_name do
     Poeticoins.available_products()
     |> Enum.group_by(& &1.exchange_name)
+  end
+
+  defp get_timezone_from_connection(socket) do
+    case get_connect_params(socket) do
+      %{"timezone" => tz} when not is_nil(tz) -> tz
+      _ -> "UTC"
+    end
   end
 end
