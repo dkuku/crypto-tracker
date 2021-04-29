@@ -18,6 +18,7 @@ defmodule PoeticoinsWeb.Router do
     pipe_through :browser
 
     live "/", CryptoDashboardLive
+    live "/products/:id", ProductLive
     #get "/", ProductController, :index
   end
 
